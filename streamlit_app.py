@@ -1,5 +1,14 @@
 # streamlit_app.py
 
+# To Do
+#
+# - poner bien la hora, gtm +2
+# - decidir que poner de delta en los card metrics
+# - pensar y poner la estadistica de los tags
+# - poner bien los puntos de los ontenedores y si es posible un label
+# - ver si cambiar ID por board
+# -  ver si se puede bloquear el zoon del map
+
 import pandas as pd
 import streamlit as st
 import altair as alt
@@ -56,7 +65,7 @@ with col1:
    st.metric(label="Batería", value="45.3 %", delta="1.2 %", help="help")
    ##my_bar = st.progress(0, text="bateria")
    st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104", delta="1.2 %")
+   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
    st.metric(label="Tags", value="4", delta="1.2 %")
 
 with col2:
@@ -64,7 +73,7 @@ with col2:
    st.metric(label="Batería", value="45.3 %", delta="1.2 %")
    ##my_bar = st.progress(0, text="bateria")
    st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104", delta="1.2 %")
+   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
    st.metric(label="Tags", value="4", delta="1.2 %")
 
 with col3:
@@ -72,7 +81,7 @@ with col3:
    st.metric(label="Batería", value="45.3 %", delta="1.2 %")
    ##my_bar = st.progress(0, text="bateria")
    st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104", delta="1.2 %")
+   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
    st.metric(label="Tags", value="4", delta="1.2 %")
 
 with col4:
@@ -80,7 +89,7 @@ with col4:
    st.metric(label="Batería", value="45.3 %", delta="1.2 %")
    ##my_bar = st.progress(0, text="bateria")
    st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104", delta="1.2 %")
+   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
    st.metric(label="Tags", value="4", delta="1.2 %")
    
 st.markdown('#')
