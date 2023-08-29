@@ -15,6 +15,9 @@ import altair as alt
 import numpy as np
 import pydeck as pdk
 import time
+from datetime import datetime
+import pytz
+from dateutil import tz
 
 st.set_page_config(
     page_title="Ecovidrio",
@@ -31,22 +34,59 @@ st.set_page_config(
 # Read in data from the Google Sheet.
 # Uses st.cache_data to only rerun when the query changes or after 10 min.
 
-googlesheets_url = "https://docs.google.com/spreadsheets/d/1Pq9mMo7U9LTOG8XO5YpfRJdrx8TroQ1ZULX9UGQ9ON4/edit#gid=327610644"
+googlesheets_url = "https://docs.google.com/spreadsheets/d/1Pq9mMo7U9LTOG8XO5YpfRJdrx8TroQ1ZULX9UGQ9ON4/edit#gid=0"
 
-@st.cache_data()
+#@st.cache_data()
 
 def load_data(sheets_url):
     csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
     data = pd.read_csv(csv_url,decimal=',')
-    data['Date']= pd.to_datetime(data['Date'],format='%d/%m/%Y %H:%M:%S')
+    data['Date']= pd.to_datetime(data['Date'],format='%d/%m/%Y %H:%M:%S').dt.tz_localize(tz='Europe/Amsterdam')
     return data
 
+def separate_df(df):
+  
+  df_eco01 = df[df['Board'] == 'ECO01']
+  df_eco02 = df[df['Board'] == 'ECO02']
+  df_eco03 = df[df['Board'] == 'ECO03']
+  df_eco04 = df[df['Board'] == 'ECO04']
+
+  return df_eco01, df_eco02, df_eco03, df_eco04
+
+data = load_data(googlesheets_url)
+
+
+
+def dataframe_tags(df):
+  tags = pd.DataFrame(columns=data.columns)
+  print(tags)
+  df = df.dropna()
+   
+  for index, row in df.iterrows():
+    tags_detected = str(row['Tags']).split(',')
+
+    for tag in tags_detected:
+      print(tag)
+      if tag not in tags['Tags'].unique() and tag is not '':
+        tags.loc[len(tags)] = row
+        tags.iloc[-1,tags.columns.get_loc('Tags')] = tag
+
+
+  new_tags = tags[['Date','Board','Tags']].copy()
+  
+  return new_tags.sort_values('Tags')
+
+
+
+    
 
 st.markdown("# Estado de los contenedores - Ecovidrio 2023")
 
 st.markdown("### " + time.strftime("%H:%M, %d-%m-%Y ", time.localtime()))
 
-data = load_data(googlesheets_url)
+
+
+df_eco01, df_eco02, df_eco03, df_eco04 = separate_df(data)
 
 #if st.checkbox('Show graph'):
 #    st.subheader('Raw data')
@@ -58,39 +98,109 @@ st.markdown('#')
 st.markdown('#')
 st.markdown("## Estado actual de los contenedores")
 
+dist_limite_lleno = 40
+
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
    st.subheader("ECO01")
-   st.metric(label="Batería", value="45.3 %", delta="1.2 %", help="help")
-   ##my_bar = st.progress(0, text="bateria")
-   st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
-   st.metric(label="Tags", value="4", delta="1.2 %")
+
+   st.markdown("Ultimo mensaje")
+   st.markdown(df_eco01.iloc[-1]['Date'])
+
+   st.metric(label="Batería", 
+             value=str(df_eco01.iloc[-1]['Battery']) + ' %', 
+             delta="OK" if df_eco01.iloc[-1]['Battery'] > 10 else "Recargar",
+             delta_color="normal" if df_eco01.iloc[-1]['Battery'] > 10 else "inverse", 
+             help="Porcentaje de la batería LiPo")
+   st.metric(label="Distancia", 
+             value=str(df_eco01.iloc[-1]['Distance']) + ' cm', 
+             delta="OK" if df_eco01.iloc[-1]['Distance'] > dist_limite_lleno else "Muy lleno",
+             delta_color="normal" if df_eco01.iloc[-1]['Distance'] > dist_limite_lleno else "inverse",
+             help="Distancia desde el sensor al suelo")
+   st.metric(label="PowerBank", 
+             value=str(df_eco01.iloc[-1]['PowerBank']) + ' V', 
+             delta="OK" if df_eco01.iloc[-1]['PowerBank'] > 5.06 else "Recargar",
+             delta_color="normal" if df_eco01.iloc[-1]['PowerBank'] > 5.06 else "inverse",
+             help="Voltaje de la batería power bank, esta casi descargada con menos de 5.06 V")
+   st.metric(label="Tags", 
+             value=df_eco01.iloc[-1]['NTags'], 
+             help="Número de tags detectados")
 
 with col2:
    st.subheader("ECO02")
-   st.metric(label="Batería", value="45.3 %", delta="1.2 %")
-   ##my_bar = st.progress(0, text="bateria")
-   st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
-   st.metric(label="Tags", value="4", delta="1.2 %")
+
+   st.markdown("Ultimo mensaje")
+   st.markdown(str(df_eco02.iloc[-1]['Date']))
+   
+   st.metric(label="Batería", 
+             value=str(df_eco02.iloc[-1]['Battery']) + ' %', 
+             delta="OK" if df_eco02.iloc[-1]['Battery'] > 10 else "Recargar",
+             delta_color="normal" if df_eco02.iloc[-1]['Battery'] > 10 else "inverse", 
+             help="Porcentaje de la batería LiPo")
+   st.metric(label="Distancia", 
+             value=str(df_eco02.iloc[-1]['Distance']) + ' cm', 
+             delta="OK" if df_eco02.iloc[-1]['Distance'] > dist_limite_lleno else "Muy lleno",
+             delta_color="normal" if df_eco02.iloc[-1]['Distance'] > dist_limite_lleno else "inverse",
+             help="Distancia desde el sensor al suelo")
+   st.metric(label="PowerBank", 
+             value=str(df_eco02.iloc[-1]['PowerBank']) + ' V', 
+             delta="OK" if df_eco02.iloc[-1]['PowerBank'] > 5.06 else "Recargar",
+             delta_color="normal" if df_eco02.iloc[-1]['PowerBank'] > 5.06 else "inverse",
+             help="Voltaje de la batería power bank, esta casi descargada con menos de 5.06 V")
+   st.metric(label="Tags", 
+             value=df_eco02.iloc[-1]['NTags'], 
+             help="Número de tags detectados")
 
 with col3:
    st.subheader("ECO03")
-   st.metric(label="Batería", value="45.3 %", delta="1.2 %")
-   ##my_bar = st.progress(0, text="bateria")
-   st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
-   st.metric(label="Tags", value="4", delta="1.2 %")
+
+   st.markdown("Ultimo mensaje")
+   st.markdown(str(df_eco03.iloc[-1]['Date']))
+   
+   st.metric(label="Batería", 
+             value=str(df_eco03.iloc[-1]['Battery']) + ' %', 
+             delta="OK" if df_eco03.iloc[-1]['Battery'] > 10 else "Recargar",
+             delta_color="normal" if df_eco03.iloc[-1]['Battery'] > 10 else "inverse", 
+             help="Porcentaje de la batería LiPo")
+   st.metric(label="Distancia", 
+             value=str(df_eco03.iloc[-1]['Distance']) + ' cm', 
+             delta="OK" if df_eco03.iloc[-1]['Distance'] > dist_limite_lleno else "Muy lleno",
+             delta_color="normal" if df_eco01.iloc[-1]['Distance'] > dist_limite_lleno else "inverse",
+             help="Distancia desde el sensor al suelo")
+   st.metric(label="PowerBank", 
+             value=str(df_eco03.iloc[-1]['PowerBank']) + ' V', 
+             delta="OK" if df_eco03.iloc[-1]['PowerBank'] > 5.06 else "Recargar",
+             delta_color="normal" if df_eco03.iloc[-1]['PowerBank'] > 5.06 else "inverse",
+             help="Voltaje de la batería power bank, esta casi descargada con menos de 5.06 V")
+   st.metric(label="Tags", 
+             value=df_eco03.iloc[-1]['NTags'], 
+             help="Número de tags detectados")
 
 with col4:
    st.subheader("ECO04")
-   st.metric(label="Batería", value="45.3 %", delta="1.2 %")
-   ##my_bar = st.progress(0, text="bateria")
-   st.metric(label="Distancia", value="138 cm", delta="1.2 %")
-   st.metric(label="PowerBank", value="5.104 V", delta="1.2 %")
-   st.metric(label="Tags", value="4", delta="1.2 %")
+
+   st.markdown("Ultimo mensaje")
+   st.markdown(str(df_eco04.iloc[-1]['Date']))
+   
+   st.metric(label="Batería", 
+             value=str(df_eco04.iloc[-1]['Battery']) + ' %', 
+             delta="OK" if df_eco04.iloc[-1]['Battery'] > 10 else "Recargar",
+             delta_color="normal" if df_eco04.iloc[-1]['Battery'] > 10 else "inverse", 
+             help="Porcentaje de la batería LiPo")
+   st.metric(label="Distancia", 
+             value=str(df_eco04.iloc[-1]['Distance']) + ' cm', 
+             delta="OK" if df_eco04.iloc[-1]['Distance'] > dist_limite_lleno else "Muy lleno",
+             delta_color="normal" if df_eco04.iloc[-1]['Distance'] > dist_limite_lleno else "inverse",
+             help="Distancia desde el sensor al suelo")
+   st.metric(label="PowerBank", 
+             value=str(df_eco04.iloc[-1]['PowerBank']) + ' V', 
+             delta="OK" if df_eco04.iloc[-1]['PowerBank'] > 5.06 else "Recargar",
+             delta_color="normal" if df_eco04.iloc[-1]['PowerBank'] > 5.06 else "inverse",
+             help="Voltaje de la batería power bank, esta casi descargada con menos de 5.06 V")
+   st.metric(label="Tags", 
+             value=df_eco04.iloc[-1]['NTags'], 
+             help="Número de tags detectados")
    
 st.markdown('#')
 st.markdown('#')
@@ -102,7 +212,7 @@ with tab1:
   chart = alt.Chart(data).mark_line().encode(
     x=alt.X('Date:T'),
     y=alt.Y('Battery'),
-    color=alt.Color("ID:N")
+    color=alt.Color("Board:N")
   ).properties(title="Evolución del estado de las baterías")
   st.altair_chart(chart, use_container_width=True)
 
@@ -110,7 +220,7 @@ with tab2:
   chart = alt.Chart(data).mark_circle().encode(
     x=alt.X('Date:T'),
     y=alt.Y('Distance'),
-    color=alt.Color("ID:N")
+    color=alt.Color("Board:N")
   ).properties(title="evolución de la detección de distancia")
   st.altair_chart(chart, theme="streamlit", use_container_width=True)
 
@@ -118,7 +228,7 @@ with tab3:
   chart = alt.Chart(data).mark_line().encode(
     x=alt.X('Date:T'),
     y=alt.Y('PowerBank'),
-    color=alt.Color("ID:N")
+    color=alt.Color("Board:N")
   ).properties(title="Evoluciñon del estado de los Powerbanks")
   st.altair_chart(chart, use_container_width=True)
 
@@ -126,14 +236,14 @@ with tab4:
   chart = alt.Chart(data).mark_bar().encode(
     x=alt.X('Date:T'),
     y=alt.Y('NTags'),
-    color=alt.Color("ID:N")
+    color=alt.Color("Board:N")
   ).properties(title="Número de tags detectados")
   st.altair_chart(chart, use_container_width=True)
 
 # chart = alt.Chart(data).mark_line().encode(
 #   x=alt.X('Date:T'),
 #   y=alt.Y('PowerBank'),
-#   color=alt.Color("ID:N")
+#   color=alt.Color("Board:N")
 # ).properties(title="Distance")
 # st.altair_chart(chart, use_container_width=True)
 
@@ -162,9 +272,16 @@ st.map(df)
 st.markdown('#')
 st.markdown('#')
 
+if st.checkbox('Mostrar Tags encontrados'):
+    st.subheader('Tags')
+    st.write(dataframe_tags(data))
+
+st.markdown('#')
+
 if st.checkbox('Mostrar datos originales'):
     st.subheader('Datos originales')
     st.write(data)
+
 
 # new_df = data[['Date','Battery']].copy()
 
@@ -208,3 +325,4 @@ if st.checkbox('Mostrar datos originales'):
 #         ),
 #     ],
 # ))
+
