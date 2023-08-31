@@ -14,6 +14,7 @@ import streamlit as st
 import altair as alt
 import numpy as np
 import pydeck as pdk
+from pydeck.types import String
 import time
 from datetime import datetime
 import pytz
@@ -36,7 +37,7 @@ st.set_page_config(
 
 googlesheets_url = "https://docs.google.com/spreadsheets/d/1Pq9mMo7U9LTOG8XO5YpfRJdrx8TroQ1ZULX9UGQ9ON4/edit#gid=0"
 
-#@st.cache_data()
+@st.cache_data()
 
 def load_data(sheets_url):
     csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
@@ -67,7 +68,7 @@ def dataframe_tags(df):
 
     for tag in tags_detected:
       print(tag)
-      if tag not in tags['Tags'].unique() and tag is not '':
+      if tag not in tags['Tags'].unique() and tag != '':
         tags.loc[len(tags)] = row
         tags.iloc[-1,tags.columns.get_loc('Tags')] = tag
 
@@ -260,14 +261,14 @@ st.markdown('#')
 st.markdown('#')
 st.markdown("## Localización de los contenedores")
 
-df = pd.DataFrame(
-    np.array([[40.423641579072424, -3.7097167830446405],
-              [40.42017844890178, -3.7049102648037278],
-              [40.428770604656876, -3.701562868171665],
-              [40.4215833250859, -3.69117735554398]]),
-    columns=['lat', 'lon'])
+# df = pd.DataFrame(
+#     np.array([[40.41285562276367, -3.845885828653413], #Paseo de los Almendros
+#               [40.40879654807273, -3.841979173370437], #Paseo de los Tilos
+#               [40.4063734444676, -3.8417234741936377], #Paseo de los Olmos
+#               [40.40424821121487, -3.8414530351276253]]), #Paseo de los Sauces
+#     columns=['lat', 'lon'])
 
-st.map(df)
+# st.map(df)
 
 st.markdown('#')
 st.markdown('#')
@@ -282,47 +283,69 @@ if st.checkbox('Mostrar datos originales'):
     st.subheader('Datos originales')
     st.write(data)
 
+chart_data = pd.DataFrame(
+    np.array([['ECO01','Paseo de los Almendros',40.41285562276367, -3.845885828653413], #Paseo de los Almendros
+              ['ECO02','Paseo de los Tilos',40.40879654807273, -3.841979173370437], #Paseo de los Tilos
+              ['ECO03','Paseo de los Olmos',40.4063734444676, -3.8417234741936377], #Paseo de los Olmos
+              ['ECO04','Paseo de los Sauces',40.40424821121487, -3.8414530351276253]]), #Paseo de los Sauces
+    columns=['name','address','lat', 'lon']) 
 
-# new_df = data[['Date','Battery']].copy()
 
+chart_data['name'] = chart_data['name'].astype('str') 
+chart_data['address'] = chart_data['address'].astype('str') 
+chart_data['lon'] = chart_data['lon'].astype('float') 
+chart_data['lat'] = chart_data['lat'].astype('float') 
 
-# if st.checkbox('Show raw data2'):
-#     st.subheader('Raw data')
-#     st.write(new_df)
+print(chart_data.dtypes)
 
-# chart_data = pd.DataFrame(
-#     np.array([[40.423641579072424, -3.7097167830446405],
-#             [40.42017844890178, -3.7049102648037278],
-#             [40.428770604656876, -3.701562868171665],
-#             [40.4215833250859, -3.69117735554398]]),
-#     columns=['lat', 'lon']) 
-#
-# st.pydeck_chart(pdk.Deck(
-#     map_style=None,
-#     initial_view_state=pdk.ViewState(
-#         latitude=40.42,
-#         longitude=-3.7,
-#         zoom=14,
-#         pitch=50,
-#     ),
-#     layers=[
-#         pdk.Layer(
-#            'HexagonLayer',
-#            data=chart_data,
-#            get_position='[lon, lat]',
-#            radius=200,
-#            elevation_scale=4,
-#            elevation_range=[0, 1000],
-#            pickable=True,
-#            extruded=True,
-#         ),
-#         pdk.Layer(
-#             'ScatterplotLayer',
-#             data=chart_data,
-#             get_position='[lon, lat]',
-#             get_color='[200, 30, 0, 160]',
-#             get_radius=200,
-#         ),
-#     ],
-# ))
+st.pydeck_chart(pdk.Deck(
+    map_style=None,
+    initial_view_state=pdk.ViewState(
+        latitude=40.4085, 
+        longitude=-3.8452,
+        zoom=14.5,
+        pitch=0,
+    ),
+    layers=[
+        pdk.Layer(
+            type='ScatterplotLayer',
+            id='scatter',
+            data=chart_data,
+            get_position=['lon', 'lat'],
+            getFillColor='[20, 130, 40, 160]',
+            get_radius=30,
+        ),
+        pdk.Layer(
+            type="TextLayer",
+            id='text-name',
+            data=chart_data,
+            pickable=True,
+            get_position=['lon', 'lat'],
+            get_text='name',
+            get_size=10,
+            get_color='[0, 0, 0]',
+            get_angle=0,
+            # Note that string constants in pydeck are explicitly passed as strings
+            # This distinguishes them from columns in a data set
+            get_text_anchor=String("middle"),
+            get_alignment_baseline=String("center"),
+        ),
+        pdk.Layer(
+            type="TextLayer",
+            id='text-address',
+            data=chart_data,
+            pickable=True,
+            get_position=['lon', 'lat'],
+            get_text='address',
+            get_size=10,
+            get_color='[0, 0, 0]',
+            get_angle=0,
+            # Note that string constants in pydeck are explicitly passed as strings
+            # This distinguishes them from columns in a data set
+            get_text_anchor=String("middle"),
+            get_alignment_baseline=String("center"),
+        ),
+    ],
+
+))
 
