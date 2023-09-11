@@ -7,7 +7,7 @@ import numpy as np
 import pydeck as pdk
 from pydeck.types import String
 import time
-from datetime import datetime
+import datetime
 import pytz
 from dateutil import tz
 
@@ -77,7 +77,9 @@ def dataframe_tags(df):
 
 st.markdown("# Estado de los contenedores - Ecovidrio 2023")
 
-st.markdown("### " + time.strftime("%H:%M, %d-%m-%Y ", time.localtime()))
+huso_horario_utc_2 = pytz.timezone('Europe/Madrid')
+time_now = datetime.datetime.now().astimezone(huso_horario_utc_2)
+st.markdown("### " + time_now.strftime("%H:%M:%S - %d/%m/%Y"))
 
 
 #############################
@@ -120,16 +122,27 @@ df = tags['Board'].value_counts().rename_axis('Board').reset_index(name='counts'
 col1, col2, col3, col4 = st.columns(4)
 col = [col1, col2, col3, col4]
 
+
 for i in range(len(col)):
 
   dist_limite_lleno = 46
 
   with col[i]:
-    st.subheader("ECO" + str(i+1))
-
-    st.markdown("Ultimo mensaje")
-    st.markdown(str(df_eco[i].iloc[-1]['Date']))
     
+    delta_time_hours = (time_now-df_eco[i].iloc[-1]['Date']).total_seconds()/3600
+    #print(delta_time_hours)
+
+    #Show text in red if there is more than 2 hour from the last message
+    if delta_time_hours > 2.0:
+      st.subheader(":red[ECO" + str(i+1) + ']')
+      st.markdown(":red[Ultimo mensaje]")
+      st.markdown(':red[' + str(df_eco[i].iloc[-1]['Date']) + ']')
+    else:
+      st.subheader("ECO" + str(i+1))
+      st.markdown("Ultimo mensaje")
+      st.markdown(str(df_eco[i].iloc[-1]['Date']))
+
+
     st.metric(label="Batería", 
               value=str(df_eco[i].iloc[-1]['Battery']) + ' %', 
               delta="OK" if df_eco[i].iloc[-1]['Battery'] > 10 else "Recargar",
@@ -142,7 +155,7 @@ for i in range(len(col)):
               help="Distancia desde el sensor al suelo")
     st.metric(label="PowerBank", 
               value=str(df_eco[i].iloc[-1]['PowerBank']) + ' V', 
-              delta="OK" if df_eco[i].iloc[-1]['PowerBank'] > 5.06 else "Recargar",
+              delta="OK" if df_eco[i].iloc[-1]['PowerBank'] > 5.03 else "Recargar",
               delta_color="normal" if df_eco[i].iloc[-1]['PowerBank'] > 5.03 else "inverse",
               help="Voltaje de la batería power bank, esta casi descargada con menos de 5.03 V")
     st.metric(label="Tags", 
