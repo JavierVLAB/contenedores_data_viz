@@ -28,7 +28,7 @@ st.set_page_config(
 
 googlesheets_url = "https://docs.google.com/spreadsheets/d/1Pq9mMo7U9LTOG8XO5YpfRJdrx8TroQ1ZULX9UGQ9ON4/edit#gid=0"
 
-@st.cache_data()
+#@st.cache_data()
 
 def load_data(sheets_url):
     csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
@@ -76,32 +76,26 @@ st.markdown("### " + time.strftime("%H:%M, %d-%m-%Y ", time.localtime()))
 
 #############################
 
-st.markdown('#')
-st.markdown('#')
-st.markdown("## Resumen")
+# st.markdown('#')
+# st.markdown('#')
+# st.markdown("## Resumen")
 
-tags = dataframe_tags(data)
+# tags = dataframe_tags(data)
 
-#print(tags['Board'].value_counts())
+# print(tags['Board'].value_counts())
+# df = tags['Board'].value_counts().rename_axis('Board').reset_index(name='counts').sort_values(by=['Board'])
+# print(df)
 
-st.markdown('#')
-st.markdown('### Número total de Tags: ' + str(len(tags.axes[0])) )
-st.markdown('### Tags encontrados en cada contenedor: ')
+# st.markdown('#')
+# st.markdown('### Número total de Tags: ' + str(len(tags.axes[0])) )
+# st.markdown('### Tags encontrados en cada contenedor: ')
 
-for idx, contenedor in enumerate(tags['Board'].value_counts().index.tolist()):
-  st.markdown('### - ' + contenedor + ': ' + str(tags['Board'].value_counts()[idx]))
+# for idx, contenedor in enumerate(tags['Board'].value_counts().index.tolist()):
+#   st.markdown('### - ' + contenedor + ': ' + str(tags['Board'].value_counts()[idx]))
 
-if st.checkbox('Mostrar Tags encontrados'):
-    st.subheader('Tags')
-    st.write(tags)
-    st.download_button(
-        label="Descargar Tags (CSV)",
-        data=tags.to_csv().encode('utf-8'),
-        file_name='tags.csv',
-        mime='text/csv',
-    )
 
-st.markdown('#')
+
+# st.markdown('#')
 
 
 ###############################
@@ -111,6 +105,10 @@ st.markdown('#')
 st.markdown("## Estado actual de los contenedores")
 
 df_eco = separate_df(data)
+
+tags = dataframe_tags(data)
+
+df = tags['Board'].value_counts().rename_axis('Board').reset_index(name='counts').sort_values(by=['Board'])
 
 col1, col2, col3, col4 = st.columns(4)
 col = [col1, col2, col3, col4]
@@ -141,8 +139,21 @@ for i in range(len(col)):
               delta_color="normal" if df_eco[i].iloc[-1]['PowerBank'] > 5.03 else "inverse",
               help="Voltaje de la batería power bank, esta casi descargada con menos de 5.03 V")
     st.metric(label="Tags", 
-              value=df_eco[i].iloc[-1]['NTags'], 
+              value=df.iloc[i]['counts'], 
               help="Número de tags detectados")
+    
+st.markdown('#')
+st.markdown('### Número total de Tags: ' + str(len(tags.axes[0])) )
+    
+if st.checkbox('Mostrar Tags encontrados'):
+    st.subheader('Tags')
+    st.write(tags)
+    st.download_button(
+        label="Descargar Tags (CSV)",
+        data=tags.to_csv().encode('utf-8'),
+        file_name='tags.csv',
+        mime='text/csv',
+    )
 
 
 ################################
@@ -174,7 +185,7 @@ with tab3:
     x=alt.X('Date:T'),
     y=alt.Y('PowerBank'),
     color=alt.Color("Board:N")
-  ).properties(title="Evoluciñon del estado de los Powerbanks")
+  ).properties(title="Evolución del estado de los Powerbanks")
   st.altair_chart(chart, use_container_width=True)
 
 with tab4:
@@ -195,9 +206,9 @@ st.markdown('#')
 
 chart_data = pd.DataFrame(
     np.array([['ECO01','Paseo de los Almendros',40.41285562276367, -3.845885828653413], #Paseo de los Almendros
-              ['ECO02','Paseo de los Tilos',40.40879654807273, -3.841979173370437], #Paseo de los Tilos
-              ['ECO03','Paseo de los Olmos',40.4063734444676, -3.8417234741936377], #Paseo de los Olmos
-              ['ECO04','Paseo de los Sauces',40.40424821121487, -3.8414530351276253]]), #Paseo de los Sauces
+              ['ECO02','Paseo de los Tilos',40.4088124, -3.8420954], #Paseo de los Tilos
+              ['ECO03','Paseo de los Olmos',40.4063784, -3.8417471], #Paseo de los Olmos
+              ['ECO04','Paseo de los Sauces',40.4042731, -3.8414437]]), #Paseo de los Sauces
     columns=['name','address','lat', 'lon']) 
 
 
@@ -207,8 +218,10 @@ chart_data['lon'] = chart_data['lon'].astype('float')
 chart_data['lat'] = chart_data['lat'].astype('float') 
 
 dir_chart_data = chart_data.copy()
+name_chart_data = chart_data.copy()
 
 dir_chart_data['lat'] = dir_chart_data['lat'] + 0.0005
+name_chart_data['lon'] = name_chart_data['lon'] - 0.0013
 
 # print(dir_chart_data)
 
@@ -232,7 +245,7 @@ st.pydeck_chart(pdk.Deck(
         pdk.Layer(
             type="TextLayer",
             id='text-name',
-            data=chart_data,
+            data=name_chart_data,
             pickable=True,
             get_position=['lon', 'lat'],
             get_text='name',
