@@ -11,6 +11,9 @@ from datetime import datetime
 import pytz
 from dateutil import tz
 
+
+# Configuración inicial del APP
+
 st.set_page_config(
     page_title="Ecovidrio",
     page_icon="recycle"
@@ -23,19 +26,18 @@ st.set_page_config(
     # }
 )
 
-# Read in data from the Google Sheet.
-# Uses st.cache_data to only rerun when the query changes or after 10 min.
-
+# URL de los datos en google sheet
 googlesheets_url = "https://docs.google.com/spreadsheets/d/1Pq9mMo7U9LTOG8XO5YpfRJdrx8TroQ1ZULX9UGQ9ON4/edit#gid=0"
 
-#@st.cache_data()
 
+#  Load los datos y convertirlos en un dataframe
 def load_data(sheets_url):
     csv_url = sheets_url.replace("/edit#gid=", "/export?format=csv&gid=")
     data = pd.read_csv(csv_url,decimal=',')
     data['Date']= pd.to_datetime(data['Date'],format='%d/%m/%Y %H:%M:%S').dt.tz_localize(tz='Europe/Amsterdam')
     return data
 
+# Separa los datos en dataframes con los tags encontrados por cada contenedor
 def separate_df(df):
   
   df_eco01 = df[df['Board'] == 'ECO01']
@@ -49,6 +51,7 @@ data = load_data(googlesheets_url)
 
 
 
+# limpia los datos y devuelve solo la primera vez que se encontro un tag
 def dataframe_tags(df):
   tags = pd.DataFrame(columns=data.columns)
   #print(tags)
@@ -68,6 +71,9 @@ def dataframe_tags(df):
   return new_tags.sort_values('Tags')
 
     
+
+
+########################
 
 st.markdown("# Estado de los contenedores - Ecovidrio 2023")
 
@@ -98,7 +104,8 @@ st.markdown("### " + time.strftime("%H:%M, %d-%m-%Y ", time.localtime()))
 # st.markdown('#')
 
 
-###############################
+############################### 
+# Estado de los contenedores
 
 st.markdown('#')
 st.markdown('#')
@@ -155,8 +162,20 @@ if st.checkbox('Mostrar Tags encontrados'):
         mime='text/csv',
     )
 
+if st.checkbox('Mostrar datos originales'):
+    st.subheader('Datos originales')
+    st.write(data)
+    st.download_button(
+        label="Descargar datos (CSV)",
+        data=tags.to_csv().encode('utf-8'),
+        file_name='data.csv',
+        mime='text/csv',
+    )
+
+
 
 ################################
+# Evolución temporal de los datos
 
 st.markdown('#')
 st.markdown('#')
@@ -197,6 +216,7 @@ with tab4:
   st.altair_chart(chart, use_container_width=True)
 
 ##############################
+# Localización de los contenedores 
 
 st.markdown('#')
 st.markdown('#')
@@ -204,6 +224,7 @@ st.markdown("## Localización de los contenedores")
 
 st.markdown('#')
 
+# Datos de localización
 chart_data = pd.DataFrame(
     np.array([['ECO01','Paseo de los Almendros',40.41285562276367, -3.845885828653413], #Paseo de los Almendros
               ['ECO02','Paseo de los Tilos',40.4088124, -3.8420954], #Paseo de los Tilos
@@ -217,13 +238,12 @@ chart_data['address'] = chart_data['address'].astype('str')
 chart_data['lon'] = chart_data['lon'].astype('float') 
 chart_data['lat'] = chart_data['lat'].astype('float') 
 
+# localizaciñon de los textos
 dir_chart_data = chart_data.copy()
 name_chart_data = chart_data.copy()
 
 dir_chart_data['lat'] = dir_chart_data['lat'] + 0.0005
 name_chart_data['lon'] = name_chart_data['lon'] - 0.0013
-
-# print(dir_chart_data)
 
 st.pydeck_chart(pdk.Deck(
     map_style=None,
@@ -278,12 +298,4 @@ st.pydeck_chart(pdk.Deck(
 
 st.markdown('#')
 
-if st.checkbox('Mostrar datos originales'):
-    st.subheader('Datos originales')
-    st.write(data)
-    st.download_button(
-        label="Descargar datos (CSV)",
-        data=tags.to_csv().encode('utf-8'),
-        file_name='data.csv',
-        mime='text/csv',
-    )
+
