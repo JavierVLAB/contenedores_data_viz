@@ -133,7 +133,7 @@ for i in range(len(col)):
     #print(delta_time_hours)
 
     #Show text in red if there is more than 2 hour from the last message
-    if delta_time_hours > 2.0:
+    if delta_time_hours > 4.0:
       st.subheader(":red[ECO" + str(i+1) + ']')
       st.markdown(":red[Ultimo mensaje]")
       st.markdown(':red[' + str(df_eco[i].iloc[-1]['Date']) + ']')
